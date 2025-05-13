@@ -1,0 +1,100 @@
+{
+  "model_tasks": [
+    {
+      "task_id": "FCNN_3_layers_last_12",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_3_layers_last_12.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_3_layers_last_12_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    },
+    {
+      "task_id": "FCNN_3_layers_last_3",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_3_layers_last_3.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_3_layers_last_3_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    },
+    {
+      "task_id": "FCNN_3_layers_last_6",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_3_layers_last_6.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_3_layers_last_6_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    },
+    {
+      "task_id": "FCNN_3_layers_last_9",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_3_layers_last_9.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_3_layers_last_9_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    },
+    {
+      "task_id": "FCNN_5_layers_last_12",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_5_layers_last_12.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_5_layers_last_12_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    },
+    {
+      "task_id": "FCNN_5_layers_last_3",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_5_layers_last_3.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_5_layers_last_3_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    },
+    {
+      "task_id": "FCNN_5_layers_last_6",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_5_layers_last_6.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_5_layers_last_6_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    },
+    {
+      "task_id": "FCNN_5_layers_last_9",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_5_layers_last_9.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_5_layers_last_9_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    },
+    {
+      "task_id": "FCNN_7_layers_last_12",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_7_layers_last_12.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_7_layers_last_12_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    },
+    {
+      "task_id": "FCNN_7_layers_last_3",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_7_layers_last_3.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_7_layers_last_3_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    },
+    {
+      "task_id": "FCNN_7_layers_last_6",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_7_layers_last_6.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_7_layers_last_6_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    },
+    {
+      "task_id": "FCNN_7_layers_last_9",
+      "model_type": "FCNN",
+      "model_file": "/workspace/EXPORT/resultadospkl/FCNN_7_layers_last_9.pkl",
+      "output_directory": "/workspace/EXPORT/resultados_batch/FCNN_7_layers_last_9_Output",
+      "visualization_pos": 0,
+      "enabled": true
+    }
+  ]
+}
