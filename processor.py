@@ -2,159 +2,149 @@
 import os
 import pandas as pd
 import numpy as np
-# Certifique-se de que os caminhos de importação para metrics e visualizer estão corretos
-# Se eles estiverem no mesmo diretório, as importações diretas funcionam.
-# Ex: from metrics import calculate_model_metrics (se metrics.py estiver no mesmo nível)
-# Se estiverem em subpastas ou de forma diferente, ajuste o sys.path ou use imports relativos.
 from metrics import posprocessDataframe, calculate_model_metrics
-from visualizer import generate_visualizations
+from visualizer import generate_visualizations # Assumindo que visualizer.py está atualizado
+
+# DEFINIR A CONSTANTE GLOBALMENTE NO TOPO DO ARQUIVO
+NUM_DAYS_METRICS = 7 
 
 def process_model(model_type, file_path, output_dir, pos=0):
     """
     Processa um modelo, calcula métricas e gera visualizações.
-    O output_dir fornecido já é o diretório final e específico da tarefa.
-
-    Parameters:
-    -----------
-    model_type : str
-        Tipo de modelo ('FCNN', 'LSTM', 'GNN')
-    file_path : str
-        Caminho para o arquivo .pkl do modelo
-    output_dir : str
-        Diretório final para salvar todas as saídas desta tarefa específica.
-    pos : int
-        Posição (dia) para visualização.
-
-    Returns:
-    --------
-    dict or None
-        Um dicionário contendo as métricas calculadas (ex: {'rmse': [...], 'r2': [...]})
-        ou None se o processamento da tarefa falhar criticamente (ex: dados não puderam ser carregados).
+    'pos' do JSON é usado para selecionar a amostra do df (se houver múltiplas)
+    e também como o 'day_for_main_viz' para generate_visualizations.
     """
     print(f"Iniciando processamento do modelo {model_type}...")
     print(f"  Lendo modelo de: {file_path}")
-    print(f"  Salvando resultados em: {output_dir}")
+    print(f"  Diretório de saída da tarefa: {output_dir}")
+    print(f"  Posição/Dia de destaque para visualização principal: {pos + 1} (índice {pos})")
 
-    # Carregar e processar dados
-    # A função load_model_data agora retorna None em caso de erro crítico
-    df = load_model_data(file_path, model_type)
+    df_loaded = load_model_data(file_path, model_type)
 
-    if df is None:
+    if df_loaded is None or df_loaded.empty:
         print(f"Falha ao carregar/processar dados para o modelo {model_type} do arquivo {file_path}.")
         print(f"Abortando processamento da tarefa para {model_type}.")
-        return None # Sinaliza para o main.py que esta tarefa falhou
+        return None 
 
-    # Calcular e exibir métricas
-    metrics = calculate_model_metrics(df) # Supondo que esta função exista em metrics.py
+    aggregated_metrics = calculate_model_metrics(df_loaded) 
 
-    print("\n===== MÉTRICAS =====")
-    if metrics and isinstance(metrics, dict) and 'rmse' in metrics and 'r2' in metrics and \
-       len(metrics['rmse']) > 0 and len(metrics['r2']) > 0:
-        for day in range(min(7, len(metrics['rmse']))): # Exibe métricas para até 7 dias
-            print(f"Dia {day+1}:")
-            print(f"  RMSE: {metrics['rmse'][day]:.4f}")
-            print(f"  R²: {metrics['r2'][day]:.4f}")
+    print("\n===== MÉTRICAS AGREGADAS (Média sobre amostras, por dia) =====")
+    if aggregated_metrics and isinstance(aggregated_metrics, dict) and \
+       'rmse' in aggregated_metrics and 'r2' in aggregated_metrics and \
+       len(aggregated_metrics['rmse']) > 0 and len(aggregated_metrics['r2']) > 0:
+        for day_idx in range(min(NUM_DAYS_METRICS, len(aggregated_metrics['rmse']))): # Usar NUM_DAYS_METRICS aqui também
+            print(f"Dia {day_idx+1}:")
+            print(f"  RMSE Médio: {aggregated_metrics['rmse'][day_idx]:.4f}")
+            print(f"  R² Médio: {aggregated_metrics['r2'][day_idx]:.4f}")
+            if 'mse' in aggregated_metrics and len(aggregated_metrics['mse']) > day_idx:
+                 print(f"  MSE Médio: {aggregated_metrics['mse'][day_idx]:.4f}")
     else:
-        print("AVISO: Métricas não foram calculadas corretamente ou estão ausentes.")
-        # Mesmo sem métricas válidas, podemos tentar gerar visualizações se o df existir.
-        # Se as métricas forem cruciais para a visualização, você pode querer retornar None aqui também.
+        print("AVISO: Métricas agregadas não foram calculadas corretamente ou estão ausentes.")
 
-    # O diretório 'output_dir' já foi criado pelo main.py.
-    # Apenas garantimos que ele exista (não prejudica verificar novamente).
     os.makedirs(output_dir, exist_ok=True)
 
-    # Gerar visualizações
-    print("\nGerando visualizações...")
-    try:
-        # Passe o 'output_dir' diretamente para generate_visualizations,
-        # pois ele já é o diretório final e específico da tarefa.
-        generate_visualizations(df, model_type, output_dir, position=pos)
-    except Exception as e_vis:
-        print(f"ERRO ao gerar visualizações para {model_type}: {e_vis}")
-        # Decida se um erro na visualização deve invalidar o retorno das métricas.
-        # Por ora, as métricas ainda serão retornadas se calculadas.
+    single_sample_data_for_viz = None
+    if not df_loaded.empty:
+        # Validar 'pos' contra o número de dias REALMENTE disponíveis após o reshape
+        # No entanto, a 'pos' do JSON é para selecionar a linha/amostra, não o dia.
+        # A seleção de dia para visualizações principais (GIFs, grid) é day_for_main_viz
+        # que também é 'pos'.
+        
+        # Se pos do JSON é para selecionar a LINHA do df_loaded:
+        effective_pos_for_sample_selection = pos 
+        if not (0 <= effective_pos_for_sample_selection < len(df_loaded)):
+            print(f"  AVISO: Posição de amostra '{effective_pos_for_sample_selection}' é inválida para o DataFrame carregado (tamanho {len(df_loaded)}). Usando a primeira amostra (índice 0).")
+            effective_pos_for_sample_selection = 0
+        
+        single_sample_data_for_viz = df_loaded.iloc[effective_pos_for_sample_selection]
+        
+        # 'pos' (vindo do JSON) também é o 'day_for_main_viz' (0-6)
+        # Garantir que este 'pos' seja válido como um índice de dia para as visualizações.
+        # Esta verificação já é feita no visualizer.py, mas pode ser útil aqui também.
+        # if not (0 <= pos < NUM_DAYS_METRICS):
+        #     print(f"  AVISO: Dia de destaque '{pos}' é inválido. Ajustando para 0.")
+        #     pos = 0 
+            
+    if single_sample_data_for_viz is None or single_sample_data_for_viz.empty:
+        print(f"  ERRO: Não foi possível obter dados da amostra para visualização. Visualizações não serão geradas.")
+    else:
+        print(f"\n  Gerando visualizações para a amostra de índice {effective_pos_for_sample_selection} (dia de destaque para visualizações principais: {pos+1})...")
+        try:
+            generate_visualizations(single_sample_data_for_viz, model_type, output_dir, day_for_main_viz=pos)
+        except Exception as e_vis:
+            print(f"  ERRO ao gerar visualizações para {model_type}: {e_vis}")
+            import traceback
+            traceback.print_exc()
 
-    print(f"Processamento do modelo {model_type} concluído!")
-    # Retorna o dicionário de métricas para ser coletado pelo main.py
-    # Se as métricas não foram calculadas corretamente, 'metrics' pode ser None ou um dict incompleto.
-    # O main.py e a função de relatório devem lidar com isso.
-    return metrics
+    print(f"\nProcessamento do modelo {model_type} concluído! Resultados em: {output_dir}")
+    return aggregated_metrics
 
-def load_model_data(file_path, model_type_info="modelo"): # model_type é mais para log aqui
+def load_model_data(file_path, model_type_info="modelo"):
     """
     Carrega e prepara os dados de um modelo a partir de um arquivo .pkl.
-
-    Parameters:
-    -----------
-    file_path : str
-        Caminho para o arquivo .pkl.
-    model_type_info : str
-        Informação do tipo de modelo, usada para mensagens de log.
-
-    Returns:
-    --------
-    pandas.DataFrame or None
-        DataFrame processado ou None em caso de erro crítico.
+    Adiciona colunas de métricas diárias (rmse, mse, r2_score) ao DataFrame.
     """
-    print(f"Carregando dados para {model_type_info} do arquivo: {file_path}")
+    print(f"    Carregando dados para {model_type_info} do arquivo: {file_path}")
 
     try:
         df = pd.read_pickle(file_path)
+        if not isinstance(df, pd.DataFrame):
+            print(f"    ERRO CRÍTICO: O arquivo {file_path} não contém um DataFrame pandas.")
+            return None
+        if df.empty:
+            print(f"    AVISO: O DataFrame carregado de {file_path} está vazio.")
+            return df 
     except FileNotFoundError:
-        print(f"ERRO CRÍTICO: Arquivo de modelo {file_path} não encontrado.")
+        print(f"    ERRO CRÍTICO: Arquivo de modelo {file_path} não encontrado.")
         return None
     except Exception as e_pickle:
-        print(f"ERRO CRÍTICO ao ler o arquivo pickle {file_path}: {e_pickle}")
+        print(f"    ERRO CRÍTICO ao ler o arquivo pickle {file_path}: {e_pickle}")
         return None
 
     try:
-        # Remover espaços extras nos nomes das colunas
         df.columns = df.columns.str.strip()
 
-        # Criar a coluna 'data' caso não exista, a partir de 'dia_mes_ano'
         if 'data' not in df.columns and 'dia_mes_ano' in df.columns:
             df["data"] = pd.to_datetime(df["dia_mes_ano"]) + pd.Timedelta(hours=12)
         elif 'data' not in df.columns:
-            print("AVISO: Coluna 'data' não encontrada e 'dia_mes_ano' também não presente para criar 'data'.")
-            # Considere se a coluna 'data' é essencial. Se for, retorne None.
-            # if True: # se 'data' for obrigatória
-            #     print("ERRO CRÍTICO: Coluna 'data' é obrigatória e não pôde ser criada.")
-            #     return None
+            print("    AVISO: Coluna 'data' não encontrada e 'dia_mes_ano' também não presente.")
 
-        # Reshape para o formato esperado (354*360, 7)
-        # Verifique se as colunas existem antes de tentar o reshape
         required_reshape_cols = ['y_rol', 'y_rol_pred']
         for col_name in required_reshape_cols:
             if col_name not in df.columns:
-                print(f"ERRO CRÍTICO: Coluna obrigatória para reshape '{col_name}' não encontrada no DataFrame.")
+                print(f"    ERRO CRÍTICO: Coluna obrigatória '{col_name}' não encontrada.")
                 return None
-
-        # Assegure-se que o conteúdo das colunas é compatível com np.array e reshape
-        # Esta é uma operação delicada e depende muito do formato exato dos seus dados no pickle
+            if df[col_name].isnull().all():
+                 print(f"    ERRO CRÍTICO: Coluna '{col_name}' contém apenas valores None.")
+                 return None
         try:
-            df['y_rol'] = df['y_rol'].apply(lambda x: np.array(x, dtype=float).reshape(354*360, 7))
-            df['y_rol_pred'] = df['y_rol_pred'].apply(lambda x: np.array(x, dtype=float).reshape(354*360, 7))
+            # AQUI é onde NUM_DAYS_METRICS é usado
+            df['y_rol'] = df['y_rol'].apply(lambda x: np.array(x, dtype=float).reshape(354*360, NUM_DAYS_METRICS) if x is not None else None)
+            df['y_rol_pred'] = df['y_rol_pred'].apply(lambda x: np.array(x, dtype=float).reshape(354*360, NUM_DAYS_METRICS) if x is not None else None)
         except Exception as e_reshape:
-            print(f"ERRO CRÍTICO durante o reshape das colunas 'y_rol' ou 'y_rol_pred': {e_reshape}")
-            # Tentar imprimir informações de debug sobre as formas
-            if 'y_rol' in df.columns and len(df['y_rol']) > 0:
-                 print(f"  Exemplo de tipo de dado em y_rol[0]: {type(df['y_rol'].iloc[0])}")
-                 if isinstance(df['y_rol'].iloc[0], (list, np.ndarray)):
-                     print(f"  Exemplo de forma de y_rol[0]: {np.array(df['y_rol'].iloc[0]).shape}")
+            print(f"    ERRO CRÍTICO durante o reshape: {e_reshape}")
+            if not df.empty:
+                first_row = df.iloc[0]
+                if 'y_rol' in first_row and first_row['y_rol'] is not None:
+                    print(f"      Exemplo de tipo de y_rol[0]: {type(first_row['y_rol'])}, shape: {np.array(first_row['y_rol']).shape if isinstance(first_row['y_rol'], (list, np.ndarray)) else 'N/A'}")
+            return None
+        
+        df.dropna(subset=['y_rol', 'y_rol_pred'], inplace=True)
+        if df.empty:
+            print(f"    AVISO: DataFrame ficou vazio após remover linhas com falha no reshape/dados ausentes em y_rol/y_rol_pred.")
             return None
 
-        # Pós-processamento do DataFrame (ex: cálculo de erros, etc.)
-        # Supondo que posprocessDataframe exista em metrics.py e retorne o df modificado
-        df = posprocessDataframe(df)
-        if df is None: # Se posprocessDataframe puder falhar e retornar None
-            print("ERRO CRÍTICO: Falha durante o posprocessDataframe.")
+        df_with_daily_metrics = posprocessDataframe(df.copy()) 
+        
+        if df_with_daily_metrics is None or df_with_daily_metrics.empty:
+            print("    ERRO CRÍTICO: Falha durante o posprocessDataframe ou resultou em DataFrame vazio.")
             return None
 
-        print(f"Dados carregados e processados com sucesso. Total de {len(df)} entradas.")
-        return df
+        print(f"    Dados carregados e métricas diárias calculadas. Total de {len(df_with_daily_metrics)} amostras válidas.")
+        return df_with_daily_metrics
 
     except Exception as e_general:
-        print(f"ERRO INESPERADO ao processar dados do arquivo {file_path}: {e_general}")
+        print(f"    ERRO INESPERADO ao processar dados do arquivo {file_path}: {e_general}")
         import traceback
         traceback.print_exc()
         return None
